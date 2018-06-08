@@ -1,0 +1,76 @@
+#include <SdFat.h>
+#include <SPI.h>
+ 
+SdFat sdCard;
+SdFile meuArquivo;
+SdFile backup;
+SdFile Temperaturas;
+SdFile Backup;
+ 
+// Pino ligado ao CS do modulo
+const int chipSelect = 4;
+int leitura = 0;
+int temperatura;
+
+int data;
+char sourceFile[13] = "LER_POT.txt" ;
+char destnFile[13] = "backup.txt" ; 
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(A4, INPUT);
+  
+  // Inicializa o modulo SD
+  if(!sdCard.begin(chipSelect,SPI_HALF_SPEED))sdCard.initErrorHalt();
+  // Abre o arquivo LER_POT.TXT
+ if (!meuArquivo.open("ler_pot.txt", O_RDWR | O_CREAT | O_AT_END))
+  {
+    sdCard.errorHalt("Erro na abertura do arquivo LER_POT.TXT!");
+  }
+    if (!backup.open("backup.txt", O_RDWR | O_CREAT | O_AT_END))
+  {
+    sdCard.errorHalt("Erro na abertura do arquivo LER_POT.TXT!");
+  }
+}
+ 
+void loop()
+{
+   //sdCard.remove(sourceFile);
+   meuArquivo.open(sourceFile, FILE_WRITE);
+  
+  temperatura = ( 5.0 * analogRead(A4) * 100.0) / 1024.0;
+ 
+  Serial.print("Leitura Temperatura: ");
+  Serial.println(temperatura);
+ 
+  // Grava dados do potenciometro em LER_POT.TXT
+  //meuArquivo.print("Leitura Temperatura: ");
+  meuArquivo.println(temperatura);
+ 
+  if (leitura == 7)
+  {
+    meuArquivo.close();
+    meuArquivo.open(sourceFile, FILE_READ);
+    backup.open(destnFile, FILE_WRITE);
+    // Interrompe o processo e fecha o arquivo
+    Serial.println("Processo de gravacao interrompido. Retire o SD!");
+
+    //============================================
+
+   
+    while ((data = meuArquivo.read()) >= 0) {
+            backup.write(data);
+    }
+    Serial.println();
+  
+    Serial.println((int)meuArquivo.read());
+
+    //============================================
+    
+    meuArquivo.close();
+    backup.close();
+    leitura=0;
+}
+leitura++;
+delay(300);
+}
